@@ -5,7 +5,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { Camera, Video, ArrowLeft, Download, Share2, Info } from 'lucide-react';
+import { Camera, Video, ArrowLeft, Download, Share2, Info, Mic } from 'lucide-react';
 import { addDoc, collection, query, getDocs } from 'firebase/firestore';                
 import { db } from './lib/firebase';
 
@@ -52,14 +52,26 @@ export default function App() {
     }
   };
 
+  const videoRef = useRef<HTMLVideoElement>(null);
+
   useEffect(() => {
+    let stream: MediaStream | null = null;
     if (step === 'camera') {
       navigator.mediaDevices.getUserMedia({ video: true, audio: true })
-        .then(stream => {
-          stream.getTracks().forEach(track => track.stop());
+        .then(s => {
+          stream = s;
+          if (videoRef.current) {
+            videoRef.current.srcObject = s;
+            videoRef.current.play();
+          }
         })
         .catch(err => console.error("Permission denied", err));
     }
+    return () => {
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
   }, [step]);
 
   const submitToDatabase = async (poseName: string, type: 'photo' | 'video') => {
@@ -161,9 +173,11 @@ export default function App() {
                 <button onClick={() => setOrientation('landscape')} className={`px-6 py-1.5 rounded-full text-[10px] uppercase tracking-widest ${orientation === 'landscape' ? 'bg-[#c5a059] text-black font-bold' : 'hover:bg-white/5'}`}>Landscape</button>
             </div>
 
-            <div className="w-full max-w-lg aspect-[4/3] bg-white/5 rounded-3xl flex items-center justify-center border-2 border-dashed border-white/10">
-                 <Camera size={48} className="text-[#c5a059]/50" />
-                 <p className="ml-4 opacity-50">Camera/Video Preview</p>
+            <div className="relative w-full max-w-lg aspect-[4/3] bg-black rounded-3xl flex items-center justify-center border-2 border-dashed border-white/10 overflow-hidden">
+                 <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                 <div className="absolute top-4 right-4 bg-black/50 p-2 rounded-full text-[#c5a059]">
+                    <Mic size={16} />
+                 </div>
             </div>
             
             <div className="mt-8 flex gap-4">
