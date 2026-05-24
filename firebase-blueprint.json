@@ -1,0 +1,23 @@
+{
+  "entities": {
+    "submission": {
+      "title": "Submission",
+      "description": "A record of yoga pose photo/video submission",
+      "type": "object",
+      "properties": {
+        "userName": { "type": "string" },
+        "district": { "type": "string" },
+        "poseName": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" },
+        "type": { "type": "string", "enum": ["photo", "video"] }
+      },
+      "required": ["userName", "district", "poseName", "date", "type"]
+    }
+  },
+  "firestore": {
+    "/submissions/{submissionId}": {
+      "schema": { "$ref": "submission" },
+      "description": "Collection of yoga pose submissions"
+    }
+  }
+}

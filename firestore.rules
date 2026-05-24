@@ -1,0 +1,28 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    match /submissions/{submissionId} {
+      // Helper function to validate submission
+      function isValidSubmission(data) {
+        return data.userName is string && data.userName.size() > 0 && data.userName.size() <= 100 &&
+               data.district is string && data.district.size() > 0 && data.district.size() <= 100 &&
+               data.poseName is string && data.poseName.size() > 0 && data.poseName.size() <= 100 &&
+               data.type in ['photo', 'video'] &&
+               data.date is string;
+      }
+      
+      // Need a way to ensure ID poison doesn't happen
+      function isValidId(id) { 
+        return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$'); 
+      }
+
+      allow create: if isValidId(submissionId) && isValidSubmission(request.resource.data);
+      allow read: if true;
+    }
+  }
+}
