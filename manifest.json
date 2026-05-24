@@ -1,0 +1,8 @@
+{
+  "name": "Yoga Path Uttarakhand",
+  "short_name": "YogaPath",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#0a0c0b",
+  "theme_color": "#8b2626"
+}
