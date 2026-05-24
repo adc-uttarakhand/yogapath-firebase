@@ -12,7 +12,10 @@ interface YogaFrameProps {
 
 export const YogaFrame: React.FC<YogaFrameProps> = ({ orientation, quote, name, designation, district, mediaUrl, mediaType }) => {
   return (
-    <div className={`aspect-[${orientation === 'portrait' ? '3/4' : '4/3'}] w-full max-w-sm bg-[#8b2626] rounded-3xl p-6 flex flex-col justify-between border-4 border-white/10 relative overflow-hidden`}>
+    <div 
+      style={{ aspectRatio: orientation === 'portrait' ? '3/4' : '4/3' }}
+      className="w-full max-w-sm bg-[#8b2626] rounded-3xl p-6 flex flex-col justify-between border-4 border-white/10 relative overflow-hidden"
+    >
       {mediaUrl && (
         <div className="absolute inset-0 z-0">
           {mediaType === 'photo' ? (
