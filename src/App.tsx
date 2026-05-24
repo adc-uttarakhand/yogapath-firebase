@@ -53,6 +53,10 @@ export default function App() {
   };
 
   const videoRef = useRef<HTMLVideoElement>(null);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordedBlob, setRecordedBlob] = useState<Blob | null>(null);
 
   useEffect(() => {
     let stream: MediaStream | null = null;
@@ -73,6 +77,39 @@ export default function App() {
       }
     };
   }, [step]);
+
+  const capturePhoto = () => {
+    if (videoRef.current && canvasRef.current) {
+      const canvas = canvasRef.current;
+      canvas.width = videoRef.current.videoWidth;
+      canvas.height = videoRef.current.videoHeight;
+      canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
+      return canvas.toDataURL('image/jpeg');
+    }
+    return null;
+  };
+
+  const toggleRecording = () => {
+    if (isRecording) {
+      mediaRecorderRef.current?.stop();
+      setIsRecording(false);
+    } else {
+      recordedChunks.current = [];
+      const stream = videoRef.current?.srcObject as MediaStream;
+      const mediaRecorder = new MediaRecorder(stream);
+      mediaRecorderRef.current = mediaRecorder;
+      mediaRecorder.ondataavailable = (e) => {
+        if (e.data.size > 0) recordedChunks.current.push(e.data);
+      };
+      mediaRecorder.onstop = () => {
+        setRecordedBlob(new Blob(recordedChunks.current, { type: 'video/webm' }));
+      };
+      mediaRecorder.start();
+      setIsRecording(true);
+    }
+  };
+
+  const recordedChunks = useRef<Blob[]>([]);
 
   const submitToDatabase = async (poseName: string, type: 'photo' | 'video') => {
     try {
@@ -175,14 +212,19 @@ export default function App() {
 
             <div className="relative w-full max-w-lg aspect-[4/3] bg-black rounded-3xl flex items-center justify-center border-2 border-dashed border-white/10 overflow-hidden">
                  <video ref={videoRef} autoPlay playsInline muted className="w-full h-full object-cover" />
+                 <canvas ref={canvasRef} className="hidden" />
                  <div className="absolute top-4 right-4 bg-black/50 p-2 rounded-full text-[#c5a059]">
                     <Mic size={16} />
                  </div>
+                 {isRecording && <div className="absolute top-4 left-4 text-red-500 font-bold p-2 bg-black/50 rounded">REC</div>}
             </div>
             
             <div className="mt-8 flex gap-4">
-                 <button onClick={() => {submitToDatabase('Pose', 'photo'); setStep('preview');}} className="bg-white text-black p-6 rounded-full hover:scale-105 transition"><Camera /></button>
-                 <button onClick={() => {submitToDatabase('Pose', 'video'); setStep('preview');}} className="bg-[#8b2626] text-white p-6 rounded-full hover:scale-105 transition"><Video /></button>
+                 <button onClick={() => {capturePhoto(); submitToDatabase('Pose', 'photo'); setStep('preview');}} className="bg-white text-black p-6 rounded-full hover:scale-105 transition"><Camera /></button>
+                 <button onClick={() => toggleRecording()} className={`p-6 rounded-full hover:scale-105 transition ${isRecording ? 'bg-red-600' : 'bg-[#8b2626]'} text-white`}>
+                    <Video />
+                 </button>
+                 {isRecording && <button onClick={() => {submitToDatabase('Pose', 'video'); setStep('preview');}} className="bg-green-600 text-white p-6 rounded-full hover:scale-105 transition">Done</button>}
             </div>
           </motion.div>
         )}
