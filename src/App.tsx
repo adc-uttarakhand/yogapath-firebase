@@ -250,15 +250,16 @@ export default function App() {
             exit={{ opacity: 0, scale: 0.9 }}
             className="flex flex-col items-center justify-center min-h-[calc(100vh-100px)] p-6"
           >
-             <YogaFrame orientation={orientation} quote={quote} name={name} designation={designation} district={district} />
+             <YogaFrame 
+                orientation={orientation} 
+                quote={quote} 
+                name={name} 
+                designation={designation} 
+                district={district}
+                mediaUrl={capturedMedia?.url}
+                mediaType={capturedMedia?.type}
+             />
              
-             {capturedMedia && capturedMedia.type === 'photo' && (
-                <img src={capturedMedia.url} alt="Yoga pose" className="mt-4 w-full max-w-lg rounded-xl shadow-lg border border-white/10" />
-             )}
-             {capturedMedia && capturedMedia.type === 'video' && (
-                <video src={capturedMedia.url} controls className="mt-4 w-full max-w-lg rounded-xl shadow-lg border border-white/10" />
-             )}
-
              <div className="flex gap-4 mt-8">
                 <button onClick={handleDownload} className="flex items-center gap-2 bg-[#c5a059] text-black px-6 py-3 rounded-full font-bold hover:bg-[#d4b069] transition"><Download size={20} /> Download</button>
                 <button className="flex items-center gap-2 bg-white/5 px-6 py-3 rounded-full hover:bg-white/10 transition"><Share2 size={20} /> Share</button>
