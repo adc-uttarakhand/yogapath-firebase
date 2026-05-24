@@ -33,6 +33,7 @@ export default function App() {
   const [quote] = useState(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [dashboardData, setDashboardData] = useState<{ district: string; count: number }[]>([]);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [capturedMedia, setCapturedMedia] = useState<{ type: 'photo' | 'video', url: string } | null>(null);
 
   useEffect(() => {
     const handler = (e: any) => {
@@ -84,7 +85,9 @@ export default function App() {
       canvas.width = videoRef.current.videoWidth;
       canvas.height = videoRef.current.videoHeight;
       canvas.getContext('2d')?.drawImage(videoRef.current, 0, 0);
-      return canvas.toDataURL('image/jpeg');
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      setCapturedMedia({ type: 'photo', url: dataUrl });
+      return dataUrl;
     }
     return null;
   };
@@ -102,7 +105,9 @@ export default function App() {
         if (e.data.size > 0) recordedChunks.current.push(e.data);
       };
       mediaRecorder.onstop = () => {
-        setRecordedBlob(new Blob(recordedChunks.current, { type: 'video/webm' }));
+        const blob = new Blob(recordedChunks.current, { type: 'video/webm' });
+        setRecordedBlob(blob);
+        setCapturedMedia({ type: 'video', url: URL.createObjectURL(blob) });
       };
       mediaRecorder.start();
       setIsRecording(true);
@@ -136,6 +141,14 @@ export default function App() {
       });
       setDashboardData(Object.entries(counts).map(([district, count]) => ({ district, count })));
   }
+
+  const handleDownload = () => {
+    if (!capturedMedia) return;
+    const link = document.createElement('a');
+    link.href = capturedMedia.url;
+    link.download = `yoga-${Date.now()}.${capturedMedia.type === 'photo' ? 'jpg' : 'webm'}`;
+    link.click();
+  };
 
   return (
     <div className="min-h-screen bg-[#0a0c0b] text-[#e0e0e0] font-sans selection:bg-[#c5a059]">
@@ -239,8 +252,15 @@ export default function App() {
           >
              <YogaFrame orientation={orientation} quote={quote} name={name} designation={designation} district={district} />
              
+             {capturedMedia && capturedMedia.type === 'photo' && (
+                <img src={capturedMedia.url} alt="Yoga pose" className="mt-4 w-full max-w-lg rounded-xl shadow-lg border border-white/10" />
+             )}
+             {capturedMedia && capturedMedia.type === 'video' && (
+                <video src={capturedMedia.url} controls className="mt-4 w-full max-w-lg rounded-xl shadow-lg border border-white/10" />
+             )}
+
              <div className="flex gap-4 mt-8">
-                <button className="flex items-center gap-2 bg-[#c5a059] text-black px-6 py-3 rounded-full font-bold hover:bg-[#d4b069] transition"><Download size={20} /> Download</button>
+                <button onClick={handleDownload} className="flex items-center gap-2 bg-[#c5a059] text-black px-6 py-3 rounded-full font-bold hover:bg-[#d4b069] transition"><Download size={20} /> Download</button>
                 <button className="flex items-center gap-2 bg-white/5 px-6 py-3 rounded-full hover:bg-white/10 transition"><Share2 size={20} /> Share</button>
              </div>
           </motion.div>
