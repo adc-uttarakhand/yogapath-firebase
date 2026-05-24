@@ -3,7 +3,7 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Camera, Video, ArrowLeft, Download, Share2, Info } from 'lucide-react';
 import { addDoc, collection, query, getDocs } from 'firebase/firestore';                
@@ -32,6 +32,35 @@ export default function App() {
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [quote] = useState(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
   const [dashboardData, setDashboardData] = useState<{ district: string; count: number }[]>([]);
+  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+
+  useEffect(() => {
+    const handler = (e: any) => {
+      e.preventDefault();
+      setDeferredPrompt(e);
+    };
+    window.addEventListener('beforeinstallprompt', handler);
+    return () => window.removeEventListener('beforeinstallprompt', handler);
+  }, []);
+
+  const handleInstall = async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    if (outcome === 'accepted') {
+        setDeferredPrompt(null);
+    }
+  };
+
+  useEffect(() => {
+    if (step === 'camera') {
+      navigator.mediaDevices.getUserMedia({ video: true, audio: true })
+        .then(stream => {
+          stream.getTracks().forEach(track => track.stop());
+        })
+        .catch(err => console.error("Permission denied", err));
+    }
+  }, [step]);
 
   const submitToDatabase = async (poseName: string, type: 'photo' | 'video') => {
     try {
@@ -105,6 +134,14 @@ export default function App() {
               >
                 View Live Dashboard
               </button>
+              {deferredPrompt && (
+                <button 
+                  onClick={handleInstall}
+                  className="w-full border font-bold border-[#c5a059] text-[#c5a059] p-4 rounded-lg hover:bg-[#c5a059]/5 transition mt-4"
+                >
+                  Install App
+                </button>
+              )}
             </div>
           </motion.div>
         )}
