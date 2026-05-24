@@ -6,9 +6,10 @@
 import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
 import { Camera, Video, ArrowLeft, Download, Share2, Info } from 'lucide-react';
-import { addDoc, collection } from 'firebase/firestore';                
+import { addDoc, collection, query, getDocs } from 'firebase/firestore';                
 import { db } from './lib/firebase';
 
+import { Dashboard } from './components/Dashboard';
 import { YogaFrame } from './components/YogaFrame';
 
 const QUOTES = [
@@ -24,12 +25,13 @@ const DISTRICTS = [
 ];
 
 export default function App() {
-  const [step, setStep] = useState<'landing' | 'camera' | 'preview'>('landing');
+  const [step, setStep] = useState<'landing' | 'camera' | 'preview' | 'dashboard'>('landing');
   const [name, setName] = useState('');
   const [designation, setDesignation] = useState('');
   const [district, setDistrict] = useState('');
   const [orientation, setOrientation] = useState<'portrait' | 'landscape'>('portrait');
   const [quote] = useState(QUOTES[Math.floor(Math.random() * QUOTES.length)]);
+  const [dashboardData, setDashboardData] = useState<{ district: string; count: number }[]>([]);
 
   const submitToDatabase = async (poseName: string, type: 'photo' | 'video') => {
     try {
@@ -45,6 +47,17 @@ export default function App() {
       console.error("Error saving submission:", error);
     }
   };
+
+  const fetchDashboardData = async () => {
+      const q = query(collection(db, "submissions"));
+      const querySnapshot = await getDocs(q);
+      const counts: Record<string, number> = {};
+      querySnapshot.forEach((doc) => {
+          const district = doc.data().district;
+          counts[district] = (counts[district] || 0) + 1;
+      });
+      setDashboardData(Object.entries(counts).map(([district, count]) => ({ district, count })));
+  }
 
   return (
     <div className="min-h-screen bg-[#0a0c0b] text-[#e0e0e0] font-sans selection:bg-[#c5a059]">
@@ -82,6 +95,15 @@ export default function App() {
                 className="w-full bg-[#8b2626] hover:bg-[#a12d2d] py-4 rounded-lg font-semibold transition disabled:bg-gray-800 disabled:opacity-50"
               >
                 Start Yoga Journey
+              </button>
+              <button 
+                onClick={() => {
+                    fetchDashboardData();
+                    setStep('dashboard');
+                }}
+                className="w-full border border-white/10 p-4 rounded-lg hover:bg-white/5 transition"
+              >
+                View Live Dashboard
               </button>
             </div>
           </motion.div>
@@ -129,6 +151,9 @@ export default function App() {
                 <button className="flex items-center gap-2 bg-white/5 px-6 py-3 rounded-full hover:bg-white/10 transition"><Share2 size={20} /> Share</button>
              </div>
           </motion.div>
+        )}
+        {step === 'dashboard' && (
+           <Dashboard data={dashboardData} onBack={() => setStep('landing')} />
         )}
       </AnimatePresence>
     </div>
